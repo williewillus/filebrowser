@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"strings"
 
 	"github.com/disintegration/imaging"
 	"github.com/dsoprea/go-exif/v3"
 	"github.com/marusama/semaphore/v2"
+	_ "github.com/filebrowser/filebrowser/v2/heif" // registers heif support with `image`
 
 	exifcommon "github.com/dsoprea/go-exif/v3/common"
 )
@@ -38,6 +40,7 @@ png
 gif
 tiff
 bmp
+heif
 )
 */
 type Format int
@@ -54,6 +57,8 @@ func (x Format) toImaging() imaging.Format {
 		return imaging.TIFF
 	case FormatBmp:
 		return imaging.BMP
+	case FormatHeif:
+		return imaging.JPEG // encode to JPEG when resizing
 	default:
 		return imaging.JPEG
 	}
@@ -90,6 +95,9 @@ fill
 type ResizeMode int
 
 func (s *Service) FormatFromExtension(ext string) (Format, error) {
+	if strings.EqualFold(ext, ".heif") || strings.EqualFold(ext, ".heic") {
+		return FormatHeif, nil
+	}
 	format, err := imaging.FormatFromExtension(ext)
 	if err != nil {
 		return -1, ErrUnsupportedFormat
@@ -166,7 +174,12 @@ func (s *Service) Resize(ctx context.Context, in io.Reader, width, height int, o
 		}
 	}
 
-	img, err := imaging.Decode(wrappedReader, imaging.AutoOrientation(true))
+	var img image.Image
+	if format == FormatHeif {
+		img, _, err = image.Decode(wrappedReader)
+	} else {
+		img, err = imaging.Decode(wrappedReader, imaging.AutoOrientation(true))
+	}
 	if err != nil {
 		return err
 	}
