@@ -1,3 +1,8 @@
+williewillus patches on v2.32.0
+
+* Add HEIF support using vendored copy of https://github.com/strukturag/libheif v1.15.1's Go bindings
+  * v1.15.1 to match Debian stable's version
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/filebrowser/logo/master/banner.png" width="550"/>
 </p>
