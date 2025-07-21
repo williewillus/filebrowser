@@ -2,24 +2,23 @@ package fileutils
 
 import (
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/spf13/afero"
-
-	"github.com/filebrowser/filebrowser/v2/files"
 )
 
 // MoveFile moves file from src to dst.
 // By default the rename filesystem system call is used. If src and dst point to different volumes
 // the file copy is used as a fallback
-func MoveFile(fs afero.Fs, src, dst string) error {
+func MoveFile(fs afero.Fs, src, dst string, fileMode fs.FileMode, dirMode fs.FileMode) error {
 	if fs.Rename(src, dst) == nil {
 		return nil
 	}
 	// fallback
-	err := Copy(fs, src, dst)
+	err := Copy(fs, src, dst, fileMode, dirMode)
 	if err != nil {
 		_ = fs.Remove(dst)
 		return err
@@ -32,7 +31,7 @@ func MoveFile(fs afero.Fs, src, dst string) error {
 
 // CopyFile copies a file from source to dest and returns
 // an error if any.
-func CopyFile(fs afero.Fs, source, dest string) error {
+func CopyFile(fs afero.Fs, source, dest string, fileMode fs.FileMode, dirMode fs.FileMode) error {
 	// Open the source file.
 	src, err := fs.Open(source)
 	if err != nil {
@@ -42,13 +41,13 @@ func CopyFile(fs afero.Fs, source, dest string) error {
 
 	// Makes the directory needed to create the dst
 	// file.
-	err = fs.MkdirAll(filepath.Dir(dest), files.PermDir)
+	err = fs.MkdirAll(filepath.Dir(dest), dirMode)
 	if err != nil {
 		return err
 	}
 
 	// Create the destination file.
-	dst, err := fs.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, files.PermFile)
+	dst, err := fs.OpenFile(dest, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileMode)
 	if err != nil {
 		return err
 	}
